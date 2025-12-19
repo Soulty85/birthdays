@@ -1,0 +1,50 @@
+name: CD — Flask Docker via SSH
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Ubuntu Server via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -e
+
+            echo "=== Début du déploiement Flask ==="
+
+            APP_DIR=/var/www/python-docker
+
+            if [ ! -d "$APP_DIR" ]; then
+              echo "→ Clonage initial du projet"
+              git clone https://github.com/${{ github.repository }} $APP_DIR
+            fi
+
+            cd $APP_DIR
+
+            echo "→ Mise à jour du code"
+            git pull origin main
+
+            echo "→ Arrêt des containers"
+            docker compose down
+
+            echo "→ Build des images"
+            docker compose build
+
+            echo "→ Démarrage des containers"
+            docker compose up -d
+
+            echo "→ Nettoyage Docker"
+            docker image prune -f
+
+            echo "=== Déploiement Flask TERMINÉ ==="
