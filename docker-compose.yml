@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+
+  python-app:
+    build: .
+    container_name: python-app
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - logs:/app/logs
+    depends_on:
+      - db
+      - redis
+
+  nginx:
+    image: nginx
+    container_name: python-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - python-app
+
+  db:
+    image: postgres
+    container_name: python-db
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: python_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+  redis: 
+    image: redis 
+    container_name: python-redis 
+    ports: 
+      - "6379:6379" 
+
+volumes:
+  dbdata:
+  logs:
